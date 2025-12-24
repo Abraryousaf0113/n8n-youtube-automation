@@ -1,0 +1,143 @@
+{
+  "name": "youtube_automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [-700, -50],
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": "GOOGLE_SHEET_DOCUMENT_ID",
+        "sheetName": "Sheet1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-450, -50],
+      "id": "get-rows",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json['VIDEO FILE NAME '] }}",
+        "filter": {
+          "folderId": "GOOGLE_DRIVE_FOLDER_ID"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [-200, -50],
+      "id": "search-video",
+      "name": "Search video file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [50, -50],
+      "id": "download-video",
+      "name": "Download video",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $json.TITLE }}",
+        "regionCode": "PK",
+        "categoryId": "27",
+        "options": {
+          "privacyStatus": "unlisted"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [-500, 200],
+      "id": "upload-video",
+      "name": "Upload a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "YOUTUBE_CREDENTIAL_ID",
+          "name": "YouTube OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "GOOGLE_SHEET_DOCUMENT_ID",
+        "sheetName": "Sheet1",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "STATUS": "Uploaded"
+          },
+          "matchingColumns": ["DATE"]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-50, 200],
+      "id": "update-status",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{ "node": "Get row(s) in sheet", "type": "main" }]]
+    },
+    "Get row(s) in sheet": {
+      "main": [[{ "node": "Search video file", "type": "main" }]]
+    },
+    "Search video file": {
+      "main": [[{ "node": "Download video", "type": "main" }]]
+    },
+    "Download video": {
+      "main": [[{ "node": "Upload a video", "type": "main" }]]
+    },
+    "Upload a video": {
+      "main": [[{ "node": "Update row in sheet", "type": "main" }]]
+    }
+  },
+  "active": false
+}
